@@ -108,4 +108,5 @@ def main(pdf_path: str) -> dict:
 
 
 if __name__ == "__main__":
-    print(main(sys.argv[1]))
+    for path in sys.argv[1:]:
+        main(path)

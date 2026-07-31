@@ -43,7 +43,7 @@ For better answer quality, point `OLLAMA_LLM` at a larger model (e.g.
 
 ## Usage
 
-Generate the sample report (or use any PDF):
+Generate the sample corpus (4 fictional reports, or use any PDFs):
 
 ```bash
 python make_sample_pdf.py
@@ -52,7 +52,7 @@ python make_sample_pdf.py
 Ingest into both stores (CLI or API):
 
 ```bash
-python -m app.ingest sample/industry_report.pdf
+python -m app.ingest sample/*.pdf      # PowerShell: Get-ChildItem sample\*.pdf | % { python -m app.ingest $_.FullName }
 curl.exe -F "file=@sample/industry_report.pdf" http://localhost:8000/ingest
 ```
 
@@ -87,25 +87,29 @@ Inspect the graph at http://localhost:7474 (neo4j/password).
 
 ## Evaluation
 
-`python run_eval.py` scores the pipeline on a 10-question golden set
-(`golden_qa.json`) derived from the sample report. Per question it checks
+`python run_eval.py` scores the pipeline on a 15-question golden set
+(`golden_qa.json`) derived from the sample corpus. Per question it checks
 whether the expected fact appears in (1) the retrieved chunks, (2) the
-surfaced graph triples, (3) the final answer.
+surfaced graph triples, (3) the final answer. Questions are flagged
+single-doc or cross-doc: cross-doc answers require joining facts that live in
+different PDFs.
 
-Measured with `qwen3.5:2b` (deterministic substring checks, n=10):
+Measured with `qwen3.5:2b` (deterministic substring checks, n=15):
 
-| Metric | Score |
-|---|---|
-| Retrieval hit-rate | 100% |
-| Graph coverage | 40% |
-| Answer accuracy | 30-40% |
+| Subset | Retrieval hit-rate | Graph coverage | Answer accuracy |
+|---|---|---|---|
+| Single-doc (n=10) | 100% | 70% | 70% |
+| Cross-doc (n=5) | 80% | 80% | 80% |
+| **Overall** | **93%** | **73%** | **73%** |
 
-Reading: vector retrieval always finds the right chunks. The two bottlenecks
-are both LLM quality: triple extraction misses some facts (graph coverage),
-and the small 2B model sometimes fails to read the answer out of its own
-context. Both improve with a larger model (`LLM_PROVIDER=openai` or a bigger
-Ollama model). Extraction noise (e.g. `...` placeholders) is filtered at
-retrieval time.
+Reading: on cross-doc questions vector retrieval drops to 80% (the facts are
+split across files and rank poorly), but graph coverage holds at 80% and
+carries answer accuracy to parity with single-doc questions — the graph
+compensates exactly where vector search weakens. The remaining gaps are LLM
+quality: triple extraction misses some facts, and the small 2B model
+occasionally fails to read the answer out of its own context. Both improve
+with a larger model (`LLM_PROVIDER=openai` or a bigger Ollama model).
+Extraction noise (e.g. `...` placeholders) is filtered at retrieval time.
 
 ## Deliberately out of scope (next steps)
 
