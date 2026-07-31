@@ -48,7 +48,12 @@ def retrieve(query: str) -> dict:
 
     with GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD)) as driver:
         rows = driver.execute_query(GRAPH_CYPHER, ids=ids).records
-    triples = [f"{r['s']} -- {r['t']} --> {r['o']}" for r in rows]
+    # ponytail: drop extraction noise ("..." placeholders) before it pollutes the prompt
+    triples = [
+        f"{r['s']} -- {r['t']} --> {r['o']}"
+        for r in rows
+        if "..." not in r["s"] and "..." not in r["t"] and "..." not in r["o"]
+    ]
 
     chunk_text = "\n".join(f"[{score:.3f}] {text[:500]}" for _, text, score in chunks)
     answer = Settings.llm.complete(

@@ -85,6 +85,28 @@ Inspect the graph at http://localhost:7474 (neo4j/password).
 - Small local models produce noisy extractions; the vector side is the stable
   idempotency contract.
 
+## Evaluation
+
+`python run_eval.py` scores the pipeline on a 10-question golden set
+(`golden_qa.json`) derived from the sample report. Per question it checks
+whether the expected fact appears in (1) the retrieved chunks, (2) the
+surfaced graph triples, (3) the final answer.
+
+Measured with `qwen3.5:2b` (deterministic substring checks, n=10):
+
+| Metric | Score |
+|---|---|
+| Retrieval hit-rate | 100% |
+| Graph coverage | 40% |
+| Answer accuracy | 30-40% |
+
+Reading: vector retrieval always finds the right chunks. The two bottlenecks
+are both LLM quality: triple extraction misses some facts (graph coverage),
+and the small 2B model sometimes fails to read the answer out of its own
+context. Both improve with a larger model (`LLM_PROVIDER=openai` or a bigger
+Ollama model). Extraction noise (e.g. `...` placeholders) is filtered at
+retrieval time.
+
 ## Deliberately out of scope (next steps)
 
 Auth, streaming responses, frontend, reranker, eval harness, app

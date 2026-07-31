@@ -1,0 +1,12 @@
+[
+  {"question": "Who founded Nova Dynamics?", "expected": ["Elena Vasquez"]},
+  {"question": "Where is Nova Dynamics headquartered?", "expected": ["Austin"]},
+  {"question": "Who founded Quantum Leap Labs?", "expected": ["Marcus Webb"]},
+  {"question": "In what year was Quantum Leap Labs founded?", "expected": ["2015"]},
+  {"question": "How much did Nova Dynamics pay to acquire Quantum Leap Labs?", "expected": ["1.2 billion"]},
+  {"question": "Who is the CEO of Vertex Energy?", "expected": ["Amara Okafor"]},
+  {"question": "Which venture firm led Vertex Energy's Series D round?", "expected": ["Polaris Capital"]},
+  {"question": "Who founded Helix Robotics?", "expected": ["David Chen"]},
+  {"question": "Which cloud provider hosts the Aurora platform?", "expected": ["Bluefin Cloud"]},
+  {"question": "What is Nova Dynamics' revenue target for 2026?", "expected": ["800 million"]}
+]
