@@ -1,8 +1,20 @@
 # Hybrid Graph-RAG Search & Extraction Pipeline
 
+![Python](https://img.shields.io/badge/python-3.11%2B-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-async-green)
+![Qdrant](https://img.shields.io/badge/vector%20db-Qdrant-red)
+![Neo4j](https://img.shields.io/badge/knowledge%20graph-Neo4j-blue)
+![LlamaIndex](https://img.shields.io/badge/orchestration-LlamaIndex-purple)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 Enterprise-style RAG that combines **vector similarity (Qdrant)** with a
 **knowledge graph (Neo4j)** in a single hybrid retrieval prompt. Built with
-FastAPI + LlamaIndex.
+FastAPI + LlamaIndex; runs fully local (Ollama) or on OpenAI.
+
+**Highlights:** hand-rolled hybrid merge (~40 lines, easy to walk through in
+an interview) - idempotent re-ingests with content-hashed chunk IDs - measured
+evaluation showing the graph compensates exactly where vector search weakens
+(cross-doc questions: retrieval 80%, graph 80%, answer 80%).
 
 ## Architecture
 
@@ -18,6 +30,10 @@ chunk_ids ──► Neo4j ─────┘   (triples + 1-hop expansion)
 
 The same chunked text feeds both stores; every Neo4j relationship records the
 `chunk_id` it came from. That ID is the join key for hybrid retrieval.
+
+The knowledge graph extracted from the 4-document sample corpus:
+
+![Knowledge graph](assets/graph.png)
 
 ## Setup
 
@@ -110,6 +126,15 @@ quality: triple extraction misses some facts, and the small 2B model
 occasionally fails to read the answer out of its own context. Both improve
 with a larger model (`LLM_PROVIDER=openai` or a bigger Ollama model).
 Extraction noise (e.g. `...` placeholders) is filtered at retrieval time.
+
+## Key files
+
+| File | What it does |
+|---|---|
+| `app/ingest.py` | PDF -> chunks -> Qdrant + LLM triple extraction -> Neo4j |
+| `app/retrieve.py` | hybrid retrieval: vector hits + graph triples -> one prompt |
+| `run_eval.py` | golden-set eval: retrieval hit-rate / graph coverage / answer accuracy |
+| `app/main.py` | FastAPI: `/health`, `/ingest`, `/query` |
 
 ## Deliberately out of scope (next steps)
 
