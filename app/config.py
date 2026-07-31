@@ -26,6 +26,7 @@ def init_settings() -> None:
             base_url=base_url,
             request_timeout=600.0,
             thinking=False,
+            num_output=1024,  # default 256 truncates long triple lists mid-JSON
         )
         Settings.embed_model = OllamaEmbedding(
             model_name=os.getenv("OLLAMA_EMBED_MODEL", "nomic-embed-text"),

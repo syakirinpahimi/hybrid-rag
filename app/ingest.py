@@ -33,15 +33,18 @@ def extract_triples(text: str) -> list[dict]:
     start, end = raw.find("["), raw.rfind("]")
     if start == -1 or end == -1:
         raise ValueError(f"no JSON list in LLM response: {raw[:200]!r}")
-    triples = json.loads(raw[start : end + 1])
+    try:
+        triples = json.loads(raw[start : end + 1])
+    except json.JSONDecodeError:
+        # qwen occasionally emits raw newlines inside string values
+        triples = json.loads(raw[start : end + 1].replace("\n", "").replace("\r", ""))
     return [
         t
         for t in triples
         if isinstance(t, dict) and {"subject", "relation", "object"} <= set(t)
     ]
 
-
-def main(pdf_path: str) -> None:
+def main(pdf_path: str) -> dict:
     init_settings()
     qdrant = QdrantClient(url=QDRANT_URL)
     dim = len(Settings.embed_model.get_text_embedding("probe"))
@@ -53,7 +56,11 @@ def main(pdf_path: str) -> None:
     storage_context = StorageContext.from_defaults(vector_store=vector_store)
 
     docs = SimpleDirectoryReader(input_files=[pdf_path]).load_data()
-    nodes = SentenceSplitter(chunk_size=512, chunk_overlap=40).get_nodes_from_documents(docs)
+    # splitter feeds node.get_content() (metadata included) into splitting, so strip
+    # path/name/timestamps or chunk boundaries change per ingest path and chunk IDs diverge
+    for doc in docs:
+        doc.metadata = {}
+    nodes = SentenceSplitter(chunk_size=512, chunk_overlap=40, include_metadata=False).get_nodes_from_documents(docs)
     for node in nodes:
         # deterministic id: re-ingesting the same PDF upserts instead of duplicating
         node.node_id = str(uuid.uuid5(uuid.NAMESPACE_URL, node.text))
@@ -91,7 +98,14 @@ def main(pdf_path: str) -> None:
     points = qdrant.get_collection(COLLECTION).points_count
     print(f"qdrant points: {points}")
     print(f"entities: {entity_count}, relationships: {rel_count} (new: {triple_count})")
+    return {
+        "chunks": len(nodes),
+        "qdrant_points": points,
+        "entities": entity_count,
+        "relationships": rel_count,
+        "new_triples": triple_count,
+    }
 
 
 if __name__ == "__main__":
-    main(sys.argv[1])
+    print(main(sys.argv[1]))

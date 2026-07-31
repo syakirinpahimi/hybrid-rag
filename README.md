@@ -30,14 +30,60 @@ uvicorn app.main:app --reload
 curl localhost:8000/health   # -> {"qdrant": "ok", "neo4j": "ok"}
 ```
 
-For `LLM_PROVIDER=ollama`, install Ollama on the host
-(`ollama pull llama3.1 && ollama pull nomic-embed-text`) - no API key needed.
+For `LLM_PROVIDER=ollama`, install Ollama on the host and pull a chat + embed
+model (no API key needed):
 
-## Usage (phases 2-4, in progress)
+```bash
+ollama pull qwen3.5:2b && ollama pull nomic-embed-text   # tested default
+ollama serve
+```
 
-- `python -m app.ingest <file.pdf>` - ingest a PDF into both stores
-- `python -m app.retrieve "<question>"` - hybrid query from the CLI
-- `POST /ingest` / `POST /query` - same over the API
+For better answer quality, point `OLLAMA_LLM` at a larger model (e.g.
+`llama3.1`) or set `LLM_PROVIDER=openai` with an `OPENAI_API_KEY`.
+
+## Usage
+
+Generate the sample report (or use any PDF):
+
+```bash
+python make_sample_pdf.py
+```
+
+Ingest into both stores (CLI or API):
+
+```bash
+python -m app.ingest sample/industry_report.pdf
+curl.exe -F "file=@sample/industry_report.pdf" http://localhost:8000/ingest
+```
+
+Query with hybrid retrieval (vector hits + graph triples merged into the prompt):
+
+```bash
+python -m app.retrieve "Who founded Quantum Leap Labs?"
+curl.exe -H "Content-Type: application/json" \
+  -d '{"query": "Where is Nova Dynamics headquartered?"}' \
+  http://localhost:8000/query
+```
+
+### API
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/health` | GET | Connectivity check for Qdrant + Neo4j |
+| `/ingest` | POST | Upload a PDF (multipart `file`) -> both stores |
+| `/query` | POST | JSON `{"query": "..."}` -> `{answer, chunks, triples}` |
+
+Inspect the graph at http://localhost:7474 (neo4j/password).
+
+## Notes
+
+- **Idempotent re-ingests**: chunk IDs are content hashes of the text, and
+  splitting ignores file metadata (path/timestamps), so re-ingesting the same
+  PDF upserts the same Qdrant points instead of duplicating them.
+- Graph entities may grow slightly across re-ingests: triple extraction is
+  LLM-driven, so re-runs can surface new phrasings as new facts.
+- Small local models produce noisy extractions; the vector side is the stable
+  idempotency contract.
 
 ## Deliberately out of scope (next steps)
 
