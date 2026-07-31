@@ -109,6 +109,5 @@ retrieval time.
 
 ## Deliberately out of scope (next steps)
 
-Auth, streaming responses, frontend, reranker, eval harness, app
-containerization, CI. The interesting parts (hybrid merge, graph extraction)
-are hand-rolled and easy to walk through in an interview.
+Auth, streaming responses, frontend, reranker, app
+containerization, CI.
