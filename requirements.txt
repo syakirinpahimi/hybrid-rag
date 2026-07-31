@@ -1,0 +1,14 @@
+llama-index-core
+llama-index-vector-stores-qdrant
+llama-index-graph-stores-neo4j
+llama-index-readers-file
+llama-index-llms-openai
+llama-index-embeddings-openai
+llama-index-llms-ollama
+llama-index-embeddings-ollama
+fastapi
+uvicorn
+python-dotenv
+pypdf
+python-multipart
+reportlab
